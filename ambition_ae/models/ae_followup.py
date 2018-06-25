@@ -2,30 +2,26 @@ from django.db import models
 from django.db.models.deletion import PROTECT
 from django.urls.base import reverse
 from django.utils.safestring import mark_safe
-from edc_action_item.model_mixins import ActionItemModelMixin
+from edc_action_item.model_mixins import ActionModelMixin
 from edc_base.model_managers import HistoricalRecords
 from edc_base.model_mixins import BaseUuidModel
 from edc_base.model_validators import date_not_future
-from edc_base.sites import CurrentSiteManager
 from edc_base.sites.site_model_mixin import SiteModelMixin
 from edc_base.utils import get_utcnow
 from edc_constants.choices import YES_NO
 from edc_constants.constants import YES, NOT_APPLICABLE, NO
-from edc_identifier.model_mixins import NonUniqueSubjectIdentifierFieldMixin
-from edc_identifier.model_mixins import TrackingIdentifierModelMixin
 
-from ..action_items import AeFollowupAction
+from ..action_items import AE_FOLLOWUP_ACTION
 from ..admin_site import ambition_ae_admin
 from ..choices import AE_OUTCOME, AE_GRADE_SIMPLE
-from ..managers import AeManager
 from .ae_initial import AeInitial
+from .managers import CurrentSiteManager, AeManager
 
 
-class AeFollowup(ActionItemModelMixin,
-                 NonUniqueSubjectIdentifierFieldMixin,
-                 TrackingIdentifierModelMixin, SiteModelMixin, BaseUuidModel):
+class AeFollowup(ActionModelMixin, SiteModelMixin, BaseUuidModel):
 
-    action_cls = AeFollowupAction
+    action_name = AE_FOLLOWUP_ACTION
+
     tracking_identifier_prefix = 'AF'
 
     ae_initial = models.ForeignKey(AeInitial, on_delete=PROTECT)
@@ -75,7 +71,8 @@ class AeFollowup(ActionItemModelMixin,
         super().save(*args, **kwargs)
 
     def natural_key(self):
-        return (self.report_datetime, ) + self.ae_initial.natural_key()
+        return (self.action_identifier, self.site.name) + self.ae_initial.natural_key()
+    natural_key.dependencies = ['ambition_ae.aeinitial', 'sites.site']
 
     @property
     def next(self):
@@ -94,7 +91,7 @@ class AeFollowup(ActionItemModelMixin,
         return self.ae_grade
 
     @property
-    def initial(self):
+    def initial_ae(self):
         """Returns a shortened action identifier.
         """
         if self.ae_initial:

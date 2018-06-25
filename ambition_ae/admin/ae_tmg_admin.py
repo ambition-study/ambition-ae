@@ -15,8 +15,9 @@ class AeTmgAdmin(ModelAdminMixin, NonAeInitialModelAdminMixin, admin.ModelAdmin)
 
     additional_instructions = 'For completion by TMG Investigators Only'
 
-    list_display = ['subject_identifier', 'dashboard', 'status', 'ae_initial', 'report_datetime',
-                    'officials_notified', 'report_closed_datetime']
+    list_display = ['subject_identifier', 'dashboard', 'status', 'ae_initial',
+                    'report_datetime', 'officials_notified',
+                    'report_closed_datetime']
 
     list_filter = ('report_datetime', 'report_status')
 

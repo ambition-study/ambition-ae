@@ -1,30 +1,44 @@
 from ambition_rando import SINGLE_DOSE, CONTROL, SINGLE_DOSE_NAME, CONTROL_NAME
+from django.contrib.sites.models import Site
 from django.db import models
 from django.utils.safestring import mark_safe
-from edc_action_item.model_mixins import ActionItemModelMixin
+from edc_action_item.model_mixins import ActionModelMixin
 from edc_base.model_fields import OtherCharField
 from edc_base.model_managers import HistoricalRecords
 from edc_base.model_mixins import BaseUuidModel
-from edc_base.sites import CurrentSiteManager, SiteModelMixin
 from edc_base.model_validators import datetime_not_future
+from edc_base.sites import SiteModelMixin
 from edc_constants.choices import YES_NO, YES_NO_NA, YES_NO_UNKNOWN
 from edc_constants.constants import NOT_APPLICABLE, UNKNOWN
-from edc_identifier.managers import TrackingIdentifierManager
-from edc_identifier.model_mixins import NonUniqueSubjectIdentifierFieldMixin
-from edc_identifier.model_mixins import TrackingIdentifierModelMixin
 
-from ..action_items import AeInitialAction
+from ..action_items import AE_INITIAL_ACTION
 from ..choices import STUDY_DRUG_RELATIONSHIP, SAE_REASONS, AE_CLASSIFICATION
 from ..model_mixins import AeModelMixin
+from ..managers import CurrentSiteManager as BaseCurrentSiteManager
 
 
-class AeInitial(AeModelMixin, ActionItemModelMixin,
-                TrackingIdentifierModelMixin, NonUniqueSubjectIdentifierFieldMixin,
-                SiteModelMixin, BaseUuidModel):
+class BaseManager(models.Manager):
+
+    def get_by_natural_key(self, action_identifier, site_name):
+        site = Site.objects.get(name=site_name)
+        return self.get(
+            action_identifier=action_identifier,
+            site=site)
+
+
+class AeInitialManager(BaseManager):
+    pass
+
+
+class CurrentSiteManager(BaseManager, BaseCurrentSiteManager):
+    pass
+
+
+class AeInitial(AeModelMixin, ActionModelMixin, SiteModelMixin, BaseUuidModel):
 
     tracking_identifier_prefix = 'AE'
 
-    action_cls = AeInitialAction
+    action_name = AE_INITIAL_ACTION
 
     ae_classification = models.CharField(
         max_length=50,
@@ -145,12 +159,16 @@ class AeInitial(AeModelMixin, ActionItemModelMixin,
 
     on_site = CurrentSiteManager()
 
-    objects = TrackingIdentifierManager()
+    objects = AeInitialManager()
 
     history = HistoricalRecords()
 
     def __str__(self):
         return f'{self.tracking_identifier[-9:]} Grade {self.ae_grade}'
+
+    def natural_key(self):
+        return (self.action_identifier, self.site.name)
+    natural_key.dependencies = ['sites.site']
 
     @property
     def action_item_reason(self):

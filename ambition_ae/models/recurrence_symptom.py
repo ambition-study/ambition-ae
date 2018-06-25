@@ -1,28 +1,37 @@
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.sites.models import Site
 from django.db import models
-from edc_action_item.model_mixins import ActionItemModelMixin
+from edc_action_item.model_mixins import ActionModelMixin
 from edc_base.model_managers import HistoricalRecords
 from edc_base.model_mixins import BaseUuidModel
-from edc_base.sites import CurrentSiteManager, SiteModelMixin
+from edc_base.sites import CurrentSiteManager as BaseCurrentSiteManager, SiteModelMixin
 from edc_base.model_validators import date_not_future
 from edc_base.utils import get_utcnow
 from edc_constants.choices import YES_NO, YES_NO_NA, NOT_APPLICABLE
-from edc_identifier.managers import TrackingIdentifierManager
-from edc_identifier.model_mixins import NonUniqueSubjectIdentifierFieldMixin
-from edc_identifier.model_mixins import TrackingIdentifierModelMixin
 
-from ..action_items import RecurrenceOfSymptomsAction
+from ..action_items import RECURRENCE_OF_SYMPTOMS_ACTION
 from ..choices import DR_OPINION, STEROIDS_CHOICES, YES_NO_ALREADY_ARV
 from .list_models import Neurological, MeningitisSymptom, AntibioticTreatment
 
 
-class RecurrenceSymptom(NonUniqueSubjectIdentifierFieldMixin,
-                        ActionItemModelMixin, TrackingIdentifierModelMixin,
-                        SiteModelMixin, BaseUuidModel):
+class BaseManager(models.Manager):
+
+    def get_by_natural_key(self, action_identifier, site_name):
+        site = Site.objects.get(name=site_name)
+        return self.get(
+            action_identifier=action_identifier,
+            site=site)
+
+
+class CurrentSiteManager(BaseManager, BaseCurrentSiteManager):
+    pass
+
+
+class RecurrenceSymptom(ActionModelMixin, SiteModelMixin, BaseUuidModel):
 
     tracking_identifier_prefix = 'RS'
 
-    action_cls = RecurrenceOfSymptomsAction
+    action_name = RECURRENCE_OF_SYMPTOMS_ACTION
 
     report_datetime = models.DateTimeField(
         verbose_name="Report Date and Time",
@@ -172,7 +181,7 @@ class RecurrenceSymptom(NonUniqueSubjectIdentifierFieldMixin,
 
     on_site = CurrentSiteManager()
 
-    objects = TrackingIdentifierManager()
+    objects = BaseManager()
 
     history = HistoricalRecords()
 

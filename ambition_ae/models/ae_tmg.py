@@ -1,26 +1,24 @@
 from django.db import models
 from django.db.models.deletion import PROTECT
-from edc_action_item.model_mixins import ActionItemModelMixin
+from edc_action_item.model_mixins import ActionModelMixin
 from edc_base.model_fields import OtherCharField
 from edc_base.model_managers import HistoricalRecords
 from edc_base.model_mixins import BaseUuidModel, ReportStatusModelMixin
 from edc_base.model_validators.date import datetime_not_future
-from edc_base.sites import CurrentSiteManager, SiteModelMixin
+from edc_base.sites import SiteModelMixin
 from edc_base.utils import get_utcnow
-from edc_identifier.model_mixins import NonUniqueSubjectIdentifierFieldMixin
-from edc_identifier.model_mixins import TrackingIdentifierModelMixin
 
-from ..action_items import AeTmgAction
+from ..action_items import AE_TMG_ACTION
 from ..choices import AE_CLASSIFICATION
-from ..managers import AeManager
 from .ae_initial import AeInitial
+from .managers import CurrentSiteManager, AeManager
 
 
-class AeTmg(ActionItemModelMixin, TrackingIdentifierModelMixin,
-            NonUniqueSubjectIdentifierFieldMixin, ReportStatusModelMixin,
+class AeTmg(ActionModelMixin, ReportStatusModelMixin,
             SiteModelMixin, BaseUuidModel):
 
-    action_cls = AeTmgAction
+    action_name = AE_TMG_ACTION
+
     tracking_identifier_prefix = 'AT'
 
     ae_initial = models.ForeignKey(AeInitial, on_delete=PROTECT)

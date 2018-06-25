@@ -1,12 +1,12 @@
 from ambition_rando.tests import AmbitionTestCaseMixin
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
-from django.db.utils import IntegrityError
 from django.test import TestCase, tag
 from edc_action_item.models import SubjectDoesNotExist
 from edc_action_item.models.action_item import ActionItem
-from edc_constants.constants import CLOSED, NO, NEW
+from edc_constants.constants import CLOSED, NO, NEW, YES
 from edc_list_data.site_list_data import site_list_data
 from edc_registration.models import RegisteredSubject
+from edc_reportable import GRADE3, GRADE4, GRADE5
 from model_mommy import mommy
 
 from ..action_items import AeFollowupAction, AeInitialAction
@@ -168,7 +168,7 @@ class TestAeAndActions(AmbitionTestCaseMixin, TestCase):
         self.assertEqual(ActionItem.objects.filter(
             subject_identifier=self.subject_identifier,
             parent_reference_identifier=ae_initial.tracking_identifier,
-            parent_model='ambition_ae.aeinitial',
+            parent_reference_model='ambition_ae.aeinitial',
             reference_identifier=None,
             reference_model='ambition_ae.aefollowup').count(), 1)
 
@@ -239,21 +239,21 @@ class TestAeAndActions(AmbitionTestCaseMixin, TestCase):
         # action item has no parent, is updated
         ActionItem.objects.get(
             parent_reference_identifier=None,
-            parent_model=None,
+            parent_reference_model=None,
             reference_identifier=ae_initial.tracking_identifier,
             reference_model='ambition_ae.aeinitial')
 
         # action item a parent, is not updated
         ActionItem.objects.get(
             parent_reference_identifier=ae_initial.tracking_identifier,
-            parent_model='ambition_ae.aeinitial',
+            parent_reference_model='ambition_ae.aeinitial',
             reference_identifier=None,
             reference_model='ambition_ae.aefollowup')
 
         # action item a parent, is not updated
         ActionItem.objects.get(
             parent_reference_identifier=ae_initial.tracking_identifier,
-            parent_model='ambition_ae.aeinitial',
+            parent_reference_model='ambition_ae.aeinitial',
             reference_identifier=None,
             reference_model='ambition_ae.aetmg')
 
@@ -268,12 +268,12 @@ class TestAeAndActions(AmbitionTestCaseMixin, TestCase):
         ae_followup = AeFollowup.objects.get(pk=ae_followup.pk)
         ActionItem.objects.get(
             parent_reference_identifier=ae_initial.tracking_identifier,
-            parent_model='ambition_ae.aeinitial',
+            parent_reference_model='ambition_ae.aeinitial',
             reference_identifier=ae_followup.tracking_identifier,
             reference_model='ambition_ae.aefollowup')
         ActionItem.objects.get(
             parent_reference_identifier=ae_followup.tracking_identifier,
-            parent_model='ambition_ae.aefollowup',
+            parent_reference_model='ambition_ae.aefollowup',
             reference_identifier=None,
             reference_model='ambition_ae.aefollowup')
 
@@ -293,12 +293,12 @@ class TestAeAndActions(AmbitionTestCaseMixin, TestCase):
         ae_followup2 = AeFollowup.objects.get(pk=ae_followup2.pk)
         ActionItem.objects.get(
             parent_reference_identifier=ae_followup1.tracking_identifier,
-            parent_model='ambition_ae.aefollowup',
+            parent_reference_model='ambition_ae.aefollowup',
             reference_identifier=ae_followup2.tracking_identifier,
             reference_model='ambition_ae.aefollowup')
         ActionItem.objects.get(
             parent_reference_identifier=ae_followup2.tracking_identifier,
-            parent_model='ambition_ae.aefollowup',
+            parent_reference_model='ambition_ae.aefollowup',
             reference_identifier=None,
             reference_model='ambition_ae.aefollowup')
 
@@ -321,12 +321,12 @@ class TestAeAndActions(AmbitionTestCaseMixin, TestCase):
 
         ActionItem.objects.get(
             parent_reference_identifier=ae_initial.tracking_identifier,
-            parent_model='ambition_ae.aeinitial',
+            parent_reference_model='ambition_ae.aeinitial',
             reference_identifier=ae_followup1.tracking_identifier,
             reference_model='ambition_ae.aefollowup')
         ActionItem.objects.get(
             parent_reference_identifier=ae_followup1.tracking_identifier,
-            parent_model='ambition_ae.aefollowup',
+            parent_reference_model='ambition_ae.aefollowup',
             reference_identifier=ae_followup2.tracking_identifier,
             reference_model='ambition_ae.aefollowup')
 
@@ -334,7 +334,7 @@ class TestAeAndActions(AmbitionTestCaseMixin, TestCase):
             ObjectDoesNotExist,
             ActionItem.objects.get,
             parent_reference_identifier=ae_followup2.tracking_identifier,
-            parent_model='ambition_ae.aefollowup',
+            parent_reference_model='ambition_ae.aefollowup',
             reference_identifier=None,
             reference_model='ambition_ae.aefollowup')
 
@@ -345,14 +345,14 @@ class TestAeAndActions(AmbitionTestCaseMixin, TestCase):
         # action item has no parent, is updated
         ActionItem.objects.get(
             parent_reference_identifier=None,
-            parent_model=None,
+            parent_reference_model=None,
             reference_identifier=ae_initial.tracking_identifier,
             reference_model='ambition_ae.aeinitial')
 
         # action item a parent, is not updated
         ActionItem.objects.get(
             parent_reference_identifier=ae_initial.tracking_identifier,
-            parent_model='ambition_ae.aeinitial',
+            parent_reference_model='ambition_ae.aeinitial',
             reference_identifier=None,
             reference_model='ambition_ae.aetmg')
 
@@ -364,7 +364,7 @@ class TestAeAndActions(AmbitionTestCaseMixin, TestCase):
         # action item a parent, is not updated
         ActionItem.objects.get(
             parent_reference_identifier=ae_initial.tracking_identifier,
-            parent_model='ambition_ae.aeinitial',
+            parent_reference_model='ambition_ae.aeinitial',
             reference_identifier=ae_tmg.tracking_identifier,
             reference_model='ambition_ae.aetmg')
 
@@ -385,3 +385,79 @@ class TestAeAndActions(AmbitionTestCaseMixin, TestCase):
             ae_initial=ae_initial,
             subject_identifier=self.subject_identifier)
         ae_followup = AeFollowup.objects.get(pk=ae_followup.pk)
+
+    def test_ae_tmg_required_if_g3_and_sae_yes(self):
+
+        ae_initial = mommy.make_recipe(
+            'ambition_ae.aeinitial',
+            subject_identifier=self.subject_identifier,
+            ae_grade=GRADE3,
+            sae=YES)
+
+        try:
+            ActionItem.objects.get(
+                parent_reference_identifier=ae_initial.tracking_identifier,
+                parent_reference_model='ambition_ae.aeinitial',
+                reference_model='ambition_ae.aetmg')
+        except ObjectDoesNotExist:
+            self.fail('ObjectDoesNotExist unexpectedly raised')
+
+    def test_ae_tmg_not_required_if_g3_and_sae_no(self):
+
+        ae_initial = mommy.make_recipe(
+            'ambition_ae.aeinitial',
+            subject_identifier=self.subject_identifier,
+            ae_grade=GRADE3,
+            sae=NO)
+
+        self.assertRaises(
+            ObjectDoesNotExist,
+            ActionItem.objects.get,
+            parent_reference_identifier=ae_initial.tracking_identifier,
+            parent_reference_model='ambition_ae.aeinitial',
+            reference_model='ambition_ae.aetmg')
+
+    def test_ae_tmg_required_if_g4(self):
+
+        ae_initial = mommy.make_recipe(
+            'ambition_ae.aeinitial',
+            subject_identifier=self.subject_identifier,
+            ae_grade=GRADE4)
+
+        ActionItem.objects.get(
+            parent_reference_identifier=ae_initial.tracking_identifier,
+            parent_reference_model='ambition_ae.aeinitial',
+            reference_model='ambition_ae.aetmg')
+
+    def test_ae_is_not_sae(self):
+
+        ae_initial = mommy.make_recipe(
+            'ambition_ae.aeinitial',
+            subject_identifier=self.subject_identifier,
+            ae_grade=GRADE3,
+            sae=NO)
+
+        self.assertRaises(
+            ObjectDoesNotExist,
+            ActionItem.objects.get,
+            parent_reference_identifier=ae_initial.tracking_identifier,
+            parent_reference_model='ambition_ae.aeinitial',
+            reference_model='ambition_ae.aetmg')
+
+    def test_ae_creates_death_report_action(self):
+
+        ae_initial = mommy.make_recipe(
+            'ambition_ae.aeinitial',
+            subject_identifier=self.subject_identifier,
+            ae_grade=GRADE5,
+            sae=NO)
+
+        ActionItem.objects.get(
+            parent_reference_identifier=ae_initial.tracking_identifier,
+            parent_reference_model='ambition_ae.aeinitial',
+            reference_model='ambition_prn.deathreport')
+
+        ActionItem.objects.get(
+            parent_reference_identifier=ae_initial.tracking_identifier,
+            parent_reference_model='ambition_ae.aeinitial',
+            reference_model='ambition_ae.aetmg')

@@ -1,0 +1,25 @@
+language: python
+python:
+- '3.6'
+addons:
+  apt_packages:
+  - libcups2-dev
+services:
+- mysql
+install:
+- pip install --upgrade pip
+- pip install flake8
+- pip install coveralls
+- pip install mysqlclient
+- pip install -e .
+- pip install -q -r requirements.txt
+before_script:
+- flake8 ambition_ae
+- mysql -e 'create database edc character set utf8;'
+script:
+- coverage run --source=ambition_ae manage.py test
+after_success:
+- coveralls
+notifications:
+  slack:
+    secure: XpN0bqJlKLAzo8eLnbZuhO+vdvbc99irj6P9WBLvAdVnodCXste/aAYt0uE+kRnSM2U2VsUESxq3mndau/TZI2/Fk/78yCxq4yUQbR8qkXGWrjCxG9iU37nuLCA/kQqrdPtMS8X3+xUAmBihR0J3tHrjd1YP1vxsMovBqQtlKmpNpBoNfep26ib+VMFdy+jddRNFcinIU1xpvwvkd5tFt1pSZvhewuDk7Jh06utWJKREhBbTuY4F7oOILU9N7iQnprTqOjxRqbcx4FbS/JCPWhY6A7ImdwYgoZD/LznHx+puO/4TxXIkWao4UrgA70oLkn/FUmaCJlFydtQpISXXxd1l1NIbZ5lZob8AUMSHcLN8I3UECGUOb7IgqZXrnMe0p3t8H2IS4PJgXmjG5i2FcoCEr61dLMAVrliK3LQtlWh5HpNJx33fLxmMyCW4bfqU23j1aB61aoTay8LOjE0LNW60MQt3KWTUWOldZTx6QGqQ+42Bh0XLlJgBtQ0wJTCs39kPDynvzhiO+drlKekKWIa2KY8bgBg8Oe4OqNmrb0/YTWeS0NCygW4yxuR9SCk0L11Vz/lr+0UaNmKXZf661rs4bMKnG4bqhJVtO/CotcFpwcUK/jzFqTs7jSx9T3yXAfBQsIQdH5mqM0dVMClFbaP8GQKmJEk0ar0Eq8SwhEg=
