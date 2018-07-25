@@ -51,6 +51,7 @@ AE_OUTCOME = (
     ('not_recovered', 'Not Recovered/Resolved at end of study'),
     (LOST_TO_FOLLOWUP, 'Unknown/Lost to follow-up'),
     ('recovered_with_sequelae', 'Recovered with sequelae'),
+    (DEAD, 'Death'),
 )
 
 
